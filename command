@@ -1,15 +1,5 @@
 #!/usr/bin/env bash
 
-if [ -z "$AWS_ACCESS_KEY_ID" ]; then
-  echo "AWS_ACCESS_KEY_ID must be set"
-  HAS_ERRORS=true
-fi
-
-if [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
-  echo "AWS_SECRET_ACCESS_KEY must be set"
-  HAS_ERRORS=true
-fi
-
 if [ -z "$S3BUCKET" ]; then
   echo "S3BUCKET must be set"
   HAS_ERRORS=true
@@ -24,7 +14,8 @@ if [ -z "$FILEPREFIX" ]; then
   FILEPREFIX='backup'
 fi
 
-FILENAME=$FILEPREFIX.latest.tar.gz
+TIMESTAMP=$(date +"%s")
+FILENAME=$FILEPREFIX.$TIMESTAMP.tar.gz
 
 if [ "$1" == "backup" ] ; then
   echo "Starting /data backup ... $(date)"
@@ -37,7 +28,8 @@ fi
 
 if [ "$1" == "restore" ] ; then
     echo "Restoring latest /data"
-    aws s3api get-object --bucket $S3BUCKET --key $FILENAME /data.tar.gz
+    LATEST=$(aws s3 ls $S3BUCKET --recursive | sort | tail -n 1 | awk '{print $4}')
+    aws s3api get-object --bucket $S3BUCKET --key $LATEST /data.tar.gz
     if [ -e /data.tar.gz ] ; then
         tar zxf data.tar.gz
         echo "Cleaning up..."
